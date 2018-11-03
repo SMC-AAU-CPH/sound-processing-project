@@ -18,9 +18,9 @@ Bbd_sound_processingAudioProcessor::Bbd_sound_processingAudioProcessor()
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  AudioChannelSet::mono(), true)
+                       .withInput  ("Input",  AudioChannelSet::stereo(), true)
                       #endif
-                       .withOutput ("Output", AudioChannelSet::mono(), true)
+                       .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
                        )
 #endif
@@ -174,30 +174,9 @@ void Bbd_sound_processingAudioProcessor::processBlock (AudioBuffer<float>& buffe
         auto * input  = buffer.getReadPointer (channel);
         auto * output  = buffer.getWritePointer (channel);
         // ..do something to the data...
-        mpBBDFilter[0]->setInputPtr (const_cast<float *>(input));
-        mpBBDFilter[0]->setOutputPtr (static_cast<float*>(bufferIn));
-        mpBBDFilter[0]->process ();
-
-        mpBBDFilter[1]->setInputPtr (const_cast<float *>(bufferIn));
-        mpBBDFilter[1]->setOutputPtr (static_cast<float*>(bufferOut));
-        mpBBDFilter[1]->process ();
-
-        mpBBDFilter[2]->setInputPtr (const_cast<float *>(bufferOut));
-        mpBBDFilter[2]->setOutputPtr (static_cast<float*>(bufferIn));
-        mpBBDFilter[2]->process ();
-
-        mpBBDFilter[3]->setInputPtr (const_cast<float *>(bufferIn));
-        mpBBDFilter[3]->setOutputPtr (static_cast<float*>(bufferOut));
-        mpBBDFilter[3]->process ();
-
-        mpBBDFilter[4]->setInputPtr (const_cast<float *>(bufferOut));
-        mpBBDFilter[4]->setOutputPtr (static_cast<float*>(bufferIn));
-        mpBBDFilter[4]->process ();
-        
-        mpBBDFilter[N - 1]->setInputPtr (mpBBDFilter[1]->getOutputPtr ());
-        mpBBDFilter[N - 1]->setOutputPtr (output);
-        mpBBDFilter[N - 1]->process ();
-
+        mpBBDFilter[channel]->setInputPtr (const_cast<float *>(input));
+        mpBBDFilter[channel]->setOutputPtr (static_cast<float*>(output));
+        mpBBDFilter[channel]->process ();
     }
 }
 
