@@ -9,4 +9,4 @@
 
 ### Frequency Response for each stage
 
-![FreqResp](progressNov04Benchmark.png)
+![FreqResp](progressNov04FreqResp.png)
