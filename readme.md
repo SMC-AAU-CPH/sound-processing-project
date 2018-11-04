@@ -6,7 +6,7 @@
 
 **Members**: Boris Kuznetsov
 
-**Current progress**: See [here](docs/processNov4.md)
+**Current progress**: See [here](docs/progressNov4.md)
 
 ### Pics:
 
