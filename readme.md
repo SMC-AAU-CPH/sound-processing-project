@@ -5,3 +5,11 @@
 **Supervisor**: Not sure yet
 
 **Members**: Boris Kuznetsov
+
+Current progress:
+
+See docs. Pics:
+
+### Frequency Response
+
+![FreqResp](docs/progressNov04FreqResp.png)
