@@ -6,10 +6,10 @@
 
 **Members**: Boris Kuznetsov
 
-Current progress:
+**Current progress**: See docs.
 
-See docs. Pics:
+### Pics:
 
-### Frequency Response
+#### Frequency Response
 
 ![FreqResp](docs/progressNov04FreqResp.png)
