@@ -116,6 +116,7 @@ void Bbd_sound_processingAudioProcessor::prepareToPlay (double sampleRate, int s
         mpBBDFilter[b]->setSampleRate (getSampleRate ());
         mpBBDFilter[b]->setClockRate (FCLK);
         mpBBDFilter[b]->setBlockSize (getBlockSize ());
+        mpBBDFilter[b]->init ();
     }
     bufferIn = new float[getBlockSize ()];
     bufferOut = new float[getBlockSize ()];

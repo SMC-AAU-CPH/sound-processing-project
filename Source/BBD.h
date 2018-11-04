@@ -9,11 +9,15 @@
 */
 
 #pragma once
+#define USE_INTERPOLATION
 #include <vector>
 #include <list>
-#include "cplxNum.h"
+#include "complex.h"
+#include <complex>
+
 template<typename T> using vector = std::vector<T>;
 template<typename T> using list = std::list<T>;
+template<typename T> using complex = std::complex<T>;
 
 class BDDFilter
 {
@@ -21,10 +25,10 @@ public:
     BDDFilter (unsigned int orderIn, unsigned int orderOut);
     ~BDDFilter () {};
 
-    inline void setInputZeros (vector<cplxNum<double>> zeros) { mpRin = zeros; };
-    inline void setInputPoles (vector<cplxNum<double>> poles) { mpPin = poles; };
-    inline void setOutputZeros (vector<cplxNum<double>> zeros) { mpRout = zeros; };
-    inline void setOutputPoles (vector<cplxNum<double>> poles) { mpPout = poles; };
+    inline void setInputZeros (vector<complex<double>> zeros) { mpRin = zeros; };
+    inline void setInputPoles (vector<complex<double>> poles) { mpPin = poles; };
+    inline void setOutputZeros (vector<complex<double>> zeros) { mpRout = zeros; };
+    inline void setOutputPoles (vector<complex<double>> poles) { mpPout = poles; };
 
     inline void setInputPtr (float * in) { mpInput = in; };
     inline void setOutputPtr (float * out) { mpOutput = out; };
@@ -36,15 +40,21 @@ public:
     inline void setClockRate (float fclk) { mClockRate = fclk; mDelta = mSampleRate / mClockRate; };
     inline void setBlockSize (unsigned int size) { mBlockSize = size; };
 
+    void init ();
+
     void setH0 ();
 
     void process ();
 
 private:
-    cplxNum<double> gIn (unsigned int m, double d);
-    cplxNum<double> gOut (unsigned int m, double d);
-    cplxNum<double> pIn (unsigned int m);
-    cplxNum<double> pOut (unsigned int m);
+    complex<double> gIn (unsigned int m, double d);
+    complex<double> gOut (unsigned int m, double d);
+#ifdef USE_INTERPOLATION
+    complex<double> gInInterp (unsigned int m, double d);
+    complex<double> gOutInterp (unsigned int m, double d);
+#endif
+    complex<double> pIn (unsigned int m);
+    complex<double> pOut (unsigned int m);
 
     unsigned int mOrderIn;
     unsigned int mOrderOut;
@@ -63,18 +73,26 @@ private:
     unsigned long long mK;
     double mEps;
 
-    vector<cplxNum<double>> mpRin;      //< zeros for input filters
-    vector<cplxNum<double>> mpRout;     //< zeros for output filters
-    vector<cplxNum<double>> mpPin;      //< poles for input filters
-    vector<cplxNum<double>> mpPout;     //< poles for output filters
+    vector<complex<double>> mpRin;      //< zeros for input filters
+    vector<complex<double>> mpRout;     //< zeros for output filters
+    vector<complex<double>> mpPin;      //< poles for input filters
+    vector<complex<double>> mpPout;     //< poles for output filters
 
-    vector<cplxNum<double>>  mpXout;
-    vector<cplxNum<double>>  mpXin;
+    vector<complex<double>>  mpXout;
+    vector<complex<double>>  mpXin;
 
-    list<cplxNum<double>> mQueue;
+    list<complex<double>> mQueue;
 
-    cplxNum<double> mYBBD;
-    cplxNum<double> mYBBDold;
-    cplxNum<double> mYDelta;
-    cplxNum<double> mH0;
+    complex<double> mYBBD;
+    complex<double> mYBBDold;
+    complex<double> mYDelta;
+    complex<double> mH0;
+
+    vector<complex<double>> mpIn;
+    vector<complex<double>> mpOut;
+
+#ifdef USE_INTERPOLATION
+    vector<complex<double>> mgIn;
+    vector<complex<double>> mgOut;;
+#endif
 };

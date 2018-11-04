@@ -10,23 +10,65 @@
 
 #include "BBD.h"
 #include <math.h>
+#include "BBD_Defines.h"
 
 BDDFilter::BDDFilter (unsigned int orderIn, unsigned int orderOut)
     : mOrderIn (orderIn)
     , mOrderOut (orderOut)
     , mCounter (0)
-    , mYBBDold (cplxNum<double>::cplxNum (0, 0))
+    , mYBBDold (complex<double>::complex (0, 0))
     , mEps (1e-20)
     , mTn (0.0)
     , mK (0)
 {
-    mpXin.resize (orderIn, cplxNum<double>::cplxNum(0,0));
-    mpXout.resize (orderOut, cplxNum<double>::cplxNum(0,0));
+    mpXin.resize (orderIn, complex<double>::complex(0,0));
+    mpXout.resize (orderOut, complex<double>::complex(0,0));
+    mpIn.resize (orderIn, complex<double>::complex(0,0));
+    mpOut.resize (orderOut, complex<double>::complex(0,0));
+#ifdef USE_INTERPOLATION
+    mgIn.resize (orderIn * INTERP_PRECISION, complex<double>::complex(0,0));
+    mgOut.resize (orderOut * INTERP_PRECISION, complex<double>::complex(0,0));
+#endif
+}
+
+
+void BDDFilter::init ()
+{
+    for (unsigned int order = 0; order < mOrderIn; ++order)
+    {
+        mpIn[order] = pIn (order);
+    }
+
+    for (unsigned int order = 0; order < mOrderOut; ++order)
+    {
+        mpOut[order] = pOut (order);
+    }
+
+#ifdef USE_INTERPOLATION
+    for (unsigned int order = 0; order < mOrderIn * INTERP_PRECISION; ++order)
+    {
+        double prec = static_cast<double>(order) / static_cast<double>(INTERP_PRECISION);
+        double fractpart;
+        double intpart;
+        fractpart = std::modf (prec, &intpart);
+        mgIn[order] = gIn (static_cast<int>(intpart), fractpart);
+    }
+
+    for (unsigned int order = 0; order < mOrderOut * INTERP_PRECISION; ++order)
+    {
+        double prec = static_cast<double>(order) / static_cast<double>(INTERP_PRECISION);
+        double fractpart;
+        double intpart;
+        fractpart = std::modf (prec, &intpart);
+        mgOut[order] = gOut (static_cast<int>(intpart), fractpart);
+    }
+#endif
+
 }
 
 void BDDFilter::setH0 ()
 {
-    mH0 = cplxNum<double>::cplxNum (0, 0);
+    mH0 = complex<double>::complex (0, 0);
     for (unsigned int m = 0; m < mOrderOut; ++m)
     {
         mH0 = mH0 + mpRout[m] / mpPout[m];
@@ -34,44 +76,64 @@ void BDDFilter::setH0 ()
     mH0 = -mH0;
 }
 
-cplxNum<double> BDDFilter::gIn (unsigned int m, double d)
+complex<double> BDDFilter::gIn (unsigned int m, double d)
 {
-    cplxNum<double> ret (0, 0);
-    ret = mpRin[m] * (mpPin[m] ^ d);
-    ret = ret * mSampleTime;
+    complex<double> ret (0.0, 0.0);
+    ret = mpRin[m] * pow (mpPin[m], d);
+    double imag = ret.imag() * mSampleTime;
+    double real = ret.real() * mSampleTime;
+    ret = complex<double> (real, imag);
     return ret;
 }
 
-cplxNum<double> BDDFilter::gOut (unsigned int m, double d)
+complex<double> BDDFilter::gOut (unsigned int m, double d)
 {
-    cplxNum<double> ret (0, 0);
-    ret = (mpRout[m] / mpPout[m]) * (mpPout[m] ^ (-1.0 - d));
+    complex<double> ret (0, 0);
+    ret = (mpRout[m] / mpPout[m]) * pow (mpPout[m], (-1.0 - d));
     return ret;
 }
 
-cplxNum<double> BDDFilter::pIn (unsigned int m)
+#ifdef USE_INTERPOLATION
+complex<double> BDDFilter::gInInterp (unsigned int m, double d)
 {
-    cplxNum<double> ret (0, 0);
-    double real = mpPin[m].getReal ();
-    double imag = mpPin[m].getImaginary ();
+    double num = m + d;
+    num *= INTERP_PRECISION;
+    num = floor (num);
+    return mgIn[num];
+}
+
+complex<double> BDDFilter::gOutInterp (unsigned int m, double d)
+{
+    double num = m + d;
+    num *= INTERP_PRECISION;
+    num = floor (num);
+    return mgOut[num];
+}
+#endif
+
+complex<double> BDDFilter::pIn (unsigned int m)
+{
+    complex<double> ret (0, 0);
+    double real = mpPin[m].real ();
+    double imag = mpPin[m].imag ();
     real *= mSampleTime;
     imag *= mSampleTime;
     double mag = exp (real);
     double arg = imag;
-    ret.setExp (mag, arg);
+    ret = std::polar<double> (mag, arg);
     return ret;
 }
 
-cplxNum<double> BDDFilter::pOut (unsigned int m)
+complex<double> BDDFilter::pOut (unsigned int m)
 {
-    cplxNum<double> ret (0, 0);
-    double real = mpPout[m].getReal ();
-    double imag = mpPout[m].getImaginary ();
+    complex<double> ret (0, 0);
+    double real = mpPout[m].real();
+    double imag = mpPout[m].imag();
     real *= mSampleTime;
     imag *= mSampleTime;
     double mag = exp (real);
     double arg = imag;
-    ret.setExp (mag, arg);
+    ret = std::polar<double> (mag, arg);
     return ret;
 }
 
@@ -86,10 +148,14 @@ void BDDFilter::process ()
             double d = (mTn - (mK - 1))*mSampleTime;
             if (0 == (mCounter % 2))
             {
-                cplxNum<double> sum (0, 0);
+                complex<double> sum (0, 0);
                 for (unsigned int m = 0; m < mOrderIn; ++m)
                 {
-                    sum = sum + gIn (m, d)*mpXin[m]; 
+#ifdef USE_INTERPOLATION
+                    sum = sum + gInInterp(m, d)*mpXin[m]; 
+#else
+                    sum = sum + gIn(m, d)*mpXin[m]; 
+#endif
                 }
                 mQueue.push_back (sum);
             }
@@ -101,7 +167,11 @@ void BDDFilter::process ()
                 mYBBDold = mYBBD;
                 for (unsigned int m = 0; m < mOrderOut; ++m)
                 {
+#ifdef USE_INTERPOLATION
+                    mpXout[m] = mpXout[m] + gOutInterp (m, d) * mYDelta;
+#else
                     mpXout[m] = mpXout[m] + gOut (m, d) * mYDelta;
+#endif
                 }
             }
             mCounter++;
@@ -109,15 +179,15 @@ void BDDFilter::process ()
         }
         for (unsigned int m = 0; m < mOrderIn; ++m)
         {
-            mpXin[m] = pIn (m) * mpXin[m] + mpInput[smpl];
+            mpXin[m] = mpIn [m] * mpXin[m] + std::polar<double>(static_cast<double>(mpInput[smpl]), 0.0);
         }
-        cplxNum<double> y = mH0 * mYBBDold;
+        complex<double> y = mH0 * mYBBDold;
         for (unsigned int m = 0; m < mOrderOut; ++m)
         {
             y = y + mpXout[m];
-            mpXout[m] = pOut (m)*mpXout[m];
+            mpXout[m] = mpOut[m] * mpXout[m];
         }
-        mpOutput[smpl] = y.getReal ();
+        mpOutput[smpl] = y.real ();
         mK++;
     }
 }
