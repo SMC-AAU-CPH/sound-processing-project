@@ -13,7 +13,7 @@
 #include <complex>
 template<typename T> using vector = std::vector<T>;
 
-static const auto N = 10;
+static const auto N = 64;
 static const auto FCLK = 50e3;
 static const auto ORDERIN = 5;
 static const auto ORDEROUT = 5;

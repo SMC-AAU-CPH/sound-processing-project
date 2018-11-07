@@ -20,6 +20,7 @@ BDDFilter::BDDFilter (unsigned int orderIn, unsigned int orderOut)
     , mEps (1e-20)
     , mTn (0.0)
     , mK (0)
+    , mQueueIdx (0)
 {
     mpXin.resize (orderIn, complex<double>::complex(0,0));
     mpXout.resize (orderOut, complex<double>::complex(0,0));
@@ -157,12 +158,16 @@ void BDDFilter::process ()
                     sum = sum + gIn(m, d)*mpXin[m]; 
 #endif
                 }
-                mQueue.push_back (sum);
+                //mQueue.push_back (sum);
+                mQueue[++mQueueIdx] = sum;
             }
             else
             {
-                mYBBD = mQueue.back ();
-                mQueue.pop_back ();
+                //mYBBD = mQueue.back ();
+                //mQueue.pop_back ();
+                mYBBD = mQueue[mQueueIdx];
+                mQueue[mQueueIdx] = complex<double> (0, 0);
+                mQueueIdx--;
                 mYDelta = mYBBD - mYBBDold;
                 mYBBDold = mYBBD;
                 for (unsigned int m = 0; m < mOrderOut; ++m)

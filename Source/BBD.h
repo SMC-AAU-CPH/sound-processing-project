@@ -81,7 +81,8 @@ private:
     vector<complex<double>>  mpXout;
     vector<complex<double>>  mpXin;
 
-    list<complex<double>> mQueue;
+    complex<double> mQueue[100];
+    unsigned int mQueueIdx;
 
     complex<double> mYBBD;
     complex<double> mYBBDold;

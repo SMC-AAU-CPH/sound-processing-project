@@ -59,8 +59,8 @@ public:
 
 private:
     //==========================dd====================================================
-    BDDFilter * mpBBDFilter[N];
-    float * bufferOut;
-    float * bufferIn;
+    BDDFilter * mpBBDFilter[2][N];
+    float * bufferOut[2];
+    float * bufferIn[2];
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Bbd_sound_processingAudioProcessor)
 };
