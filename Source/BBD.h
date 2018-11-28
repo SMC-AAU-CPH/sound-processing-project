@@ -69,8 +69,8 @@ private:
 
     float mDelta;
     double mTn;
-    unsigned long long mCounter;
-    unsigned long long mK;
+    unsigned long long mN;
+    long long mK;
     double mEps;
 
     vector<complex<double>> mpRin;      //< zeros for input filters
@@ -81,7 +81,7 @@ private:
     vector<complex<double>>  mpXout;
     vector<complex<double>>  mpXin;
 
-    complex<double> mQueue[100];
+    complex<double> mQueue[1000];
     unsigned int mQueueIdx;
 
     complex<double> mYBBD;

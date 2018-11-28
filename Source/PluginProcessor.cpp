@@ -131,6 +131,7 @@ void Bbd_sound_processingAudioProcessor::prepareToPlay (double sampleRate, int s
         bufferIn[c] = new float[getBlockSize ()];
         bufferOut[c] = new float[getBlockSize ()];
     }
+    mSampleRate = getSampleRate ();
 }
 
 void Bbd_sound_processingAudioProcessor::releaseResources()
@@ -188,21 +189,22 @@ void Bbd_sound_processingAudioProcessor::processBlock (AudioBuffer<float>& buffe
         // ..do something to the data...
         mpBBDFilter[channel][0]->setInputPtr (const_cast<float*>(input));
         mpBBDFilter[channel][0]->setOutputPtr (static_cast<float*>(bufferOut[channel]));
-        mpBBDFilter[channel][0]->setClockRate (FCLK);
         mpBBDFilter[channel][0]->process ();
 
         for (unsigned int n = 1; n < N - 1; ++n)
         {
             mpBBDFilter[channel][n]->setInputPtr (static_cast<float *>(bufferOut[channel]));
             mpBBDFilter[channel][n]->setOutputPtr (static_cast<float *>(bufferOut[channel]));
-            mpBBDFilter[channel][n]->setClockRate (FCLK);
             mpBBDFilter[channel][n]->process ();
         }
 
         mpBBDFilter[channel][N - 1]->setInputPtr (static_cast<float *>(bufferOut[channel]));
         mpBBDFilter[channel][N - 1]->setOutputPtr (static_cast<float *>(output));
-        mpBBDFilter[channel][N - 1]->setClockRate (FCLK);
         mpBBDFilter[channel][N - 1]->process ();
+        for (unsigned int i = 0; i < getBlockSize (); ++i)
+        {
+            output[i] *= 1000;
+        }
     }
 }
 

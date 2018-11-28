@@ -11,11 +11,17 @@
 #include "BBD.h"
 #include <math.h>
 #include "BBD_Defines.h"
+#include <limits.h>
+
+bool equalDouble (double a, double b)
+{
+    return (abs (a - b) <= DBL_EPSILON);
+}
 
 BDDFilter::BDDFilter (unsigned int orderIn, unsigned int orderOut)
     : mOrderIn (orderIn)
     , mOrderOut (orderOut)
-    , mCounter (0)
+    , mN (0)
     , mYBBDold (complex<double>::complex (0, 0))
     , mEps (1e-20)
     , mTn (0.0)
@@ -140,31 +146,26 @@ complex<double> BDDFilter::pOut (unsigned int m)
 
 void BDDFilter::process ()
 {
-    mTn = 0.0;
-    mK = 0;
     for (unsigned int smpl = 0; smpl < mBlockSize; ++smpl)
     {
-        while ((mTn< mK) || ((0 > mCounter % 2) && (abs (mTn - mK) > mEps)))
+        while ((mTn < mK) || ((0 != mN % 2) && equalDouble(mTn, static_cast<double>(mK))))
         {
             double d = (mTn - (mK - 1))*mSampleTime;
-            if (0 == (mCounter % 2))
+            if (0 == (mN % 2))
             {
                 complex<double> sum (0, 0);
                 for (unsigned int m = 0; m < mOrderIn; ++m)
                 {
 #ifdef USE_INTERPOLATION
-                    sum = sum + gInInterp(m, d)*mpXin[m]; 
+                    sum = sum + gInInterp (m, d) * mpXin[m];
 #else
                     sum = sum + gIn(m, d)*mpXin[m]; 
 #endif
                 }
-                //mQueue.push_back (sum);
                 mQueue[++mQueueIdx] = sum;
             }
             else
             {
-                //mYBBD = mQueue.back ();
-                //mQueue.pop_back ();
                 mYBBD = mQueue[mQueueIdx];
                 mQueue[mQueueIdx] = complex<double> (0, 0);
                 mQueueIdx--;
@@ -179,13 +180,20 @@ void BDDFilter::process ()
 #endif
                 }
             }
-            mCounter++;
-            mTn += mDelta;
+            mN++;
+            if (LLONG_MAX == mN)
+            {
+                mN = 0;
+                mK = 0;
+            }
+            mTn = mN * mDelta;
         }
+        // [END WHILE]
         for (unsigned int m = 0; m < mOrderIn; ++m)
         {
             mpXin[m] = mpIn [m] * mpXin[m] + std::polar<double>(static_cast<double>(mpInput[smpl]), 0.0);
         }
+
         complex<double> y = mH0 * mYBBDold;
         for (unsigned int m = 0; m < mOrderOut; ++m)
         {
@@ -194,5 +202,10 @@ void BDDFilter::process ()
         }
         mpOutput[smpl] = y.real ();
         mK++;
+        if (LLONG_MAX == mK)
+        {
+            mK = 0;
+            mN = 0;
+        }
     }
 }
